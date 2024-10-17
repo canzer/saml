@@ -1,0 +1,43 @@
+def prepare_flask_request(request):
+    # Determine the port, defaulting to 5000 if not found
+    server_port = request.environ.get('SERVER_PORT', '5000') if request.environ.get('wsgi.url_scheme') == 'http' else '443'
+    
+    return {
+        'http_host': request.host,
+        'server_port': server_port,
+        'script_name': request.script_root,
+        'path_info': request.path,
+        'query_string': request.query_string,
+        'http_user_agent': request.user_agent.string,
+        'http_accept': request.accept_mimetypes,
+        'http_referer': request.referrer,
+        'http_method': request.method,
+        'post_data': request.form if request.method == 'POST' else None,
+    }
+
+
+#Extract SAML User attributes
+
+def extract_user_attributes():
+    """
+    Extracts user attributes from session['user'].
+    
+    Returns:
+        A dictionary of user attributes where the first value in each attribute's list is stored.
+        If the session['user'] is empty or doesn't exist, an empty dictionary is returned.
+    """
+    user_data = session.get('user', {})
+    
+    # Create a dictionary to store the extracted key-value pairs
+    extracted_user_data = {}
+    
+    # Loop through the user data dictionary and extract the first value from each list
+    for key, value in user_data.items():
+        if value:  # Ensure the value list is not empty
+            extracted_user_data[key] = value[0]  # Store the first value
+    
+    return extracted_user_data
+
+
+##############SAML RELATED PYTHON3-SAML##############################
+
