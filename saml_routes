@@ -1,0 +1,62 @@
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from flask import Flask, redirect, request, session, Blueprint
+from app.utils import prepare_flask_request, get_saml_settings
+
+
+#Register Blueprint
+saml_bp = Blueprint('saml', __name__, template_folder='templates')
+
+
+#Endpoints
+
+@saml_bp.route('/saml/login')
+def saml_login():
+    #Gets SAML config
+    """Initiates the SSO process by redirecting to the IdP."""
+    auth = OneLogin_Saml2_Auth(prepare_flask_request(request), custom_base_path=get_saml_settings())
+    return redirect(auth.login())
+
+
+
+
+@saml_bp.route('/saml/acs', methods=['POST'])
+def acs():
+    print("Received POST request to /saml/acs")
+    #print("Request data:", request.form)
+    
+    # Log incoming SAML response
+    saml_response = request.form.get('SAMLResponse')
+    #print("SAML Response (Base64):", saml_response)
+
+    # Prepare SAML auth object
+    auth = OneLogin_Saml2_Auth(prepare_flask_request(request), custom_base_path=get_saml_settings())
+    
+    # Attempt to process the SAML response
+    try:
+        auth.process_response()
+        print("SAML response processed successfully.")
+    except Exception as e:
+        print(f"Error processing SAML response: {e}")
+        return "Error processing SAML response", 500
+
+    errors = auth.get_errors()
+    if errors:
+        print(f"SAML Processing Errors: {errors}")
+        return f"Error: {', '.join(errors)}", 400
+
+    if not auth.is_authenticated():
+        return "Authentication failed!", 401
+
+    # Store user information in session
+    session['user'] = auth.get_attributes()
+    return redirect('/')
+
+
+
+
+@saml_bp.route('/saml/logout')
+def saml_logout():
+    """Handles logout requests."""
+    session.pop('user', None)
+    auth = OneLogin_Saml2_Auth(prepare_flask_request(request), custom_base_path=get_saml_settings())
+    return redirect(auth.logout())
