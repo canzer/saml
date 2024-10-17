@@ -1,0 +1,10 @@
+    if request.method =="POST":
+        ivalue = request.form.get('ivalue')
+        p = subprocess.Popen(
+            ["powershell.exe", "-File", "C:\\Users\\bigc\\Desktop\\PowerShweb\\app\\powershell\\helloworld.ps1", ivalue], 
+            stdout=subprocess.PIPE
+            )
+    output = p.communicate()
+    outputstr = output[0].decode()
+    #print(outputstr)
+    return jsonify(outputstr)
